@@ -143,6 +143,28 @@ enum Commands {
         #[arg(value_name = "OUTPUT", short, long)]
         output: String,
     },
+    /// Crop video to 1:1 square
+    SquareCrop {
+        /// Input video file
+        #[arg(value_name = "INPUT")]
+        input: String,
+
+        /// Output video file
+        #[arg(value_name = "OUTPUT")]
+        output: String,
+
+        /// Size of the square output (default: smallest dimension of input)
+        #[arg(short, long)]
+        size: Option<u32>,
+
+        /// X-coordinate of the top-left corner of the crop area (default: centered)
+        #[arg(short = 'x', long)]
+        x_offset: Option<i32>,
+
+        /// Y-coordinate of the top-left corner of the crop area (default: centered)
+        #[arg(short = 'y', long)]
+        y_offset: Option<i32>,
+    },
 }
 
 fn main() {
@@ -205,6 +227,12 @@ fn main() {
         Commands::Concat { inputs, output } => {
             if let Err(e) = ffmpeg::concatenate_videos(inputs, output) {
                 eprintln!("Error concatenating videos: {}", e);
+                std::process::exit(1);
+            }
+        }
+        Commands::SquareCrop { input, output, size, x_offset, y_offset } => {
+            if let Err(e) = ffmpeg::square_crop(input, output, *size, *x_offset, *y_offset) {
+                eprintln!("Error cropping video to square: {}", e);
                 std::process::exit(1);
             }
         }

@@ -3,6 +3,7 @@ use std::process::{Command, Stdio};
 use std::path::Path;
 use std::io::{self, Read, Write};
 use std::fs::File;
+use std::cmp::{min, max};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum Shape {
@@ -374,7 +375,70 @@ pub fn get_video_duration(input: &str) -> io::Result<f64> {
     }
 }
 
-#[allow(dead_code)]
+pub fn square_crop(input: &str, output: &str, size: Option<u32>, x_offset: Option<i32>, y_offset: Option<i32>) -> io::Result<()> {
+    // Check if input file exists
+    if !Path::new(input).exists() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, format!("Input file not found: {}", input)));
+    }
+
+    // Get video dimensions
+    let (width, height) = get_video_dimensions(input)?;
+
+    // Determine the crop size (capped by the smaller dimension of the video)
+    let crop_size = min(size.unwrap_or_else(|| min(width, height)), min(width, height));
+
+    // Calculate crop values
+    let x = x_offset.unwrap_or_else(|| ((width as i32 - crop_size as i32) / 2).max(0));
+    let y = y_offset.unwrap_or_else(|| ((height as i32 - crop_size as i32) / 2).max(0));
+
+    // Ensure x and y are within the video dimensions
+    let x = max(0, min(x, width as i32 - crop_size as i32));
+    let y = max(0, min(y, height as i32 - crop_size as i32));
+
+    // Construct the FFmpeg command
+    let mut command = Command::new("ffmpeg");
+    command.arg("-i")
+           .arg(input)
+           .arg("-vf")
+           .arg(format!("crop={}:{}:{}:{}", crop_size, crop_size, x, y))
+           .arg("-c:a")
+           .arg("copy")
+           .arg("-y") // Overwrite output file if it exists
+           .arg(output);
+
+    // Print the command being run
+    println!("Running FFmpeg command: {:?}", command);
+
+    // Run the command with piped stdout and stderr
+    let mut child = command.stdout(Stdio::piped())
+                           .stderr(Stdio::piped())
+                           .spawn()?;
+
+    // Read stdout and stderr
+    let mut stdout = String::new();
+    let mut stderr = String::new();
+    if let Some(ref mut stdout_handle) = child.stdout {
+        stdout_handle.read_to_string(&mut stdout)?;
+    }
+    if let Some(ref mut stderr_handle) = child.stderr {
+        stderr_handle.read_to_string(&mut stderr)?;
+    }
+
+    // Wait for the command to finish and check the status
+    let status = child.wait()?;
+
+    // Print stdout and stderr
+    println!("FFmpeg stdout:\n{}", stdout);
+    println!("FFmpeg stderr:\n{}", stderr);
+
+    if status.success() {
+        println!("Video cropped to square successfully!");
+        Ok(())
+    } else {
+        Err(io::Error::new(io::ErrorKind::Other, format!("FFmpeg command failed with status: {}", status)))
+    }
+}
+
 pub fn get_video_dimensions(input: &str) -> io::Result<(u32, u32)> {
     let output = Command::new("ffprobe")
         .args(&["-v", "error", "-select_streams", "v:0", "-count_packets", "-show_entries", "stream=width,height", "-of", "csv=p=0", input])
