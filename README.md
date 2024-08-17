@@ -1,16 +1,16 @@
-# Video CLI 
+# FFMPEG CLI 
 
 A simple FFMPEG wrapper for common functions. 
 
 ## Requirements
-Both need to be acessible to the CLI by installing on the system and setting the PATH or placing ffmpeg and ffprobe within the "/usr/local/bin"
-
+Both need to be acessible to the CLI by installing on the system and setting the PATH or placing ffmpeg and ffprobe within the "/usr/local/bin".
+Downloads available here: https://ffmpeg.org/download.html
 - ffmpeg
 - ffprobe
 
 ## To cover a watermark:
 ```sh
-cargo run -- cover-watermark videos/5.mp4 output/no_watermark.mp4 200 100
+cargo run -- cover-watermark videos/1.mp4 output/no_watermark.mp4 --width 110 --height 105 --x 1170 --y 535 --shape rectangle --color "#000000"
 ```
 
 ## To apply an effect:
