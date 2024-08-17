@@ -1,0 +1,8 @@
+[package]
+name = "ffmpeg-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["astordigital@gmail.com"]
+
+[dependencies]
+clap = { version = "4.5.15", features = ["derive"] }
