@@ -1,10 +1,10 @@
-# Video CLI 
+# FFMPEG CLI 
 
 A simple FFMPEG wrapper for common functions. 
 
 ## Requirements
-Both need to be acessible to the CLI by installing on the system and setting the PATH or placing ffmpeg and ffprobe within the "/usr/local/bin"
-
+Both need to be acessible to the CLI by installing on the system and setting the PATH or placing ffmpeg and ffprobe within the "/usr/local/bin".
+Downloads available here: https://ffmpeg.org/download.html
 - ffmpeg
 - ffprobe
 
