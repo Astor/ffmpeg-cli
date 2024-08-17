@@ -10,7 +10,7 @@ Downloads available here: https://ffmpeg.org/download.html
 
 ## To cover a watermark:
 ```sh
-cargo run -- cover-watermark videos/5.mp4 output/no_watermark.mp4 200 100
+cargo run -- cover-watermark videos/1.mp4 output_v5/no_watermark.mp4 --width 110 --height 105 --x 1170 --y 535 --shape rectangle --color "#000000"
 ```
 
 ## To apply an effect:
