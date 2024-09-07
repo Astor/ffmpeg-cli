@@ -1,6 +1,7 @@
 use clap::ValueEnum;
 use std::process::{Command, Stdio};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use tempfile;
 use std::io::{self, Read, Write};
 use std::fs::File;
 use std::cmp::{min, max};
@@ -520,4 +521,61 @@ pub fn concatenate_videos(inputs: &[String], output: &str) -> io::Result<()> {
     } else {
         Err(io::Error::new(io::ErrorKind::Other, format!("FFmpeg command failed with status: {}", status)))
     }
+}
+
+pub fn create_slideshow(input_folder: &str, output: &str, duration: u32) -> Result<(), Box<dyn std::error::Error>> {
+    let current_dir = std::env::current_dir()?;
+    let input_path = make_absolute_path(input_folder, &current_dir);
+    let output_path = make_absolute_path(output, &current_dir);
+
+    if !input_path.is_dir() {
+        return Err(format!("{} is not a directory", input_path.display()).into());
+    }
+
+    // Create a temporary file to store the list of images
+    let temp_file = tempfile::NamedTempFile::new()?;
+    let temp_path = temp_file.path().to_str().unwrap();
+
+    // Write the list of image files to the temporary file
+    let mut image_list = String::new();
+    for entry in std::fs::read_dir(&input_path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && is_image_file(&path) {
+            image_list.push_str(&format!("file '{}'\nduration {}\n", path.display(), duration));
+        }
+    }
+    std::fs::write(temp_path, image_list)?;
+
+    // Construct the FFmpeg command
+    let output = Command::new("ffmpeg")
+        .args(&[
+            "-f", "concat",
+            "-safe", "0",
+            "-i", temp_path,
+            "-vsync", "vfr",
+            "-pix_fmt", "yuv420p",
+            output_path.to_str().unwrap(),
+        ])
+        .output()?;
+
+    if !output.status.success() {
+        return Err(format!("FFmpeg command failed: {}", String::from_utf8_lossy(&output.stderr)).into());
+    }
+
+    Ok(())
+}
+
+fn make_absolute_path(path: &str, current_dir: &Path) -> PathBuf {
+    let path_buf = PathBuf::from(path);
+    if path_buf.is_absolute() {
+        path_buf
+    } else {
+        current_dir.join(path_buf)
+    }
+}
+
+fn is_image_file(path: &Path) -> bool {
+    let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+    matches!(extension.to_lowercase().as_str(), "jpg" | "jpeg" | "png" | "gif" | "bmp")
 }
