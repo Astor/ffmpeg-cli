@@ -165,6 +165,20 @@ enum Commands {
         #[arg(short = 'y', long)]
         y_offset: Option<i32>,
     },
+    /// Create a slideshow from a folder of images
+    Slideshow {
+        /// Input folder containing images (relative or absolute path)
+        #[arg(value_name = "INPUT_FOLDER")]
+        input_folder: String,
+
+        /// Output video file (relative or absolute path)
+        #[arg(value_name = "OUTPUT")]
+        output: String,
+
+        /// Duration of each image in seconds
+        #[arg(value_name = "DURATION", default_value = "3")]
+        duration: u32,
+    },
 }
 
 fn main() {
@@ -233,6 +247,12 @@ fn main() {
         Commands::SquareCrop { input, output, size, x_offset, y_offset } => {
             if let Err(e) = ffmpeg::square_crop(input, output, *size, *x_offset, *y_offset) {
                 eprintln!("Error cropping video to square: {}", e);
+                std::process::exit(1);
+            }
+        }
+        Commands::Slideshow { input_folder, output, duration } => {
+            if let Err(e) = ffmpeg::create_slideshow(input_folder, output, *duration) {
+                eprintln!("Error creating slideshow: {}", e);
                 std::process::exit(1);
             }
         }
